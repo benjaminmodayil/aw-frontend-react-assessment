@@ -2,6 +2,7 @@ import { storageService } from '../utils/storage';
 import { delayPatterns } from '../utils/delay';
 import { logger } from '../utils/logger';
 import { validateTaskText, sanitizeTaskText } from '../utils/validation';
+import { idGenerator } from '../utils/idGenerator';
 import { Task } from '../types';
 import { STORAGE_KEYS } from '../constants';
 
@@ -54,7 +55,7 @@ export const taskService = {
     
     const sanitizedText = sanitizeTaskText(taskText);
     const newTask = {
-      id: Date.now(),
+      id: idGenerator.generateId(),
       text: sanitizedText,
       completed: false,
       createdAt: new Date().toISOString(),
