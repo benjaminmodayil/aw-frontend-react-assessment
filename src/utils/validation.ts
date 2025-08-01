@@ -1,4 +1,5 @@
 import { APP_CONFIG, ERROR_MESSAGES } from '../constants';
+import { sanitizeTaskText as sanitize } from './sanitizer';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -26,7 +27,8 @@ export const validateTaskText = (text: string): ValidationResult => {
 };
 
 export const sanitizeTaskText = (text: string): string => {
-  return text.trim().replace(/\s+/g, ' ');
+  // Use the secure sanitizer that prevents XSS
+  return sanitize(text);
 };
 
 export const isValidId = (id: any): id is number => {

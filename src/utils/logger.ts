@@ -19,10 +19,27 @@ class Logger {
     return this.isDevelopment && level >= this.level;
   }
 
+  private sanitizeContext(context: any): any {
+    if (!context) return undefined;
+    
+    // Remove sensitive data from context
+    const sanitized = { ...context };
+    const sensitiveKeys = ['password', 'token', 'key', 'secret', 'auth', 'cookie', 'session'];
+    
+    for (const key in sanitized) {
+      if (sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))) {
+        sanitized[key] = '[REDACTED]';
+      }
+    }
+    
+    return sanitized;
+  }
+
   private formatMessage(level: string, message: string, context?: any): string {
     const timestamp = new Date().toISOString();
     const prefix = `[${timestamp}] [${level}]`;
-    return context ? `${prefix} ${message} ${JSON.stringify(context)}` : `${prefix} ${message}`;
+    const sanitizedContext = this.sanitizeContext(context);
+    return sanitizedContext ? `${prefix} ${message} ${JSON.stringify(sanitizedContext)}` : `${prefix} ${message}`;
   }
 
   debug(message: string, context?: any): void {
@@ -44,6 +61,12 @@ class Logger {
   }
 
   error(message: string, context?: any): void {
+    // In production, only log generic error messages
+    if (!this.isDevelopment) {
+      console.error('An error occurred. Please try again later.');
+      return;
+    }
+    
     if (this.shouldLog(LogLevel.ERROR)) {
       console.error(this.formatMessage('ERROR', message, context));
     }

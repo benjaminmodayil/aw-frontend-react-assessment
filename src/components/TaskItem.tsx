@@ -1,6 +1,7 @@
 import React from 'react';
 import { TaskItemProps } from '../types';
 import LoadingSpinner from './LoadingSpinner';
+import { sanitizeForDisplay } from '../utils/sanitizer';
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onDelete, isToggling, isDeleting }) => {
   const handleToggle = () => {
@@ -25,7 +26,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onToggle, onDelete, isTogglin
         aria-busy={isToggling}
       />
       <span className={`task-text ${task.completed ? 'task-completed' : ''}`}>
-        {task.text}
+        {sanitizeForDisplay(task.text)}
         {isToggling && <LoadingSpinner size="small" />}
       </span>
       <div className="task-actions">

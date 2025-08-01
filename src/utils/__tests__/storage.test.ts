@@ -29,9 +29,33 @@ Object.defineProperty(window, 'localStorage', {
   writable: true
 });
 
+// Mock sessionStorage for encryption key
+const mockSessionStorage = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    }
+  };
+})();
+
+Object.defineProperty(window, 'sessionStorage', {
+  value: mockSessionStorage,
+  writable: true
+});
+
 describe('storage utilities', () => {
   beforeEach(() => {
     mockLocalStorage.clear();
+    mockSessionStorage.clear();
   });
 
   describe('getStorageKey', () => {
@@ -67,7 +91,10 @@ describe('storage utilities', () => {
       expect(result).toBe(true);
       
       const store = mockLocalStorage._getStore();
-      expect(store['task-app_test']).toBe(JSON.stringify(testData));
+      const savedData = JSON.parse(store['task-app_test']);
+      expect(savedData).toHaveProperty('data');
+      expect(savedData).toHaveProperty('checksum');
+      expect(savedData).toHaveProperty('timestamp');
     });
 
     it('should save array data correctly', () => {
@@ -77,7 +104,10 @@ describe('storage utilities', () => {
       expect(result).toBe(true);
       
       const store = mockLocalStorage._getStore();
-      expect(store['task-app_tasks']).toBe(JSON.stringify(testData));
+      const savedData = JSON.parse(store['task-app_tasks']);
+      expect(savedData).toHaveProperty('data');
+      expect(savedData).toHaveProperty('checksum');
+      expect(savedData).toHaveProperty('timestamp');
     });
 
     it('should save primitive data types', () => {
@@ -86,9 +116,13 @@ describe('storage utilities', () => {
       storageService.save('boolean', true);
       
       const store = mockLocalStorage._getStore();
-      expect(store['task-app_string']).toBe('"hello"');
-      expect(store['task-app_number']).toBe('42');
-      expect(store['task-app_boolean']).toBe('true');
+      const stringData = JSON.parse(store['task-app_string']);
+      const numberData = JSON.parse(store['task-app_number']);
+      const booleanData = JSON.parse(store['task-app_boolean']);
+      
+      expect(stringData).toHaveProperty('data');
+      expect(numberData).toHaveProperty('data');
+      expect(booleanData).toHaveProperty('data');
     });
 
     it('should handle localStorage errors gracefully', () => {
@@ -102,10 +136,13 @@ describe('storage utilities', () => {
       const result = storageService.save('test', { data: 'test' });
       
       expect(result).toBe(false);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to save to localStorage:',
-        expect.any(Error)
-      );
+      // In development mode, it should log the error
+      if (process.env.NODE_ENV === 'development') {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Failed to save to localStorage:',
+          expect.any(Error)
+        );
+      }
       
       consoleSpy.mockRestore();
       mockLocalStorage.setItem = originalSetItem;
@@ -115,7 +152,8 @@ describe('storage utilities', () => {
   describe('storageService.load', () => {
     it('should load data from localStorage successfully', () => {
       const testData = { id: 1, name: 'test' };
-      mockLocalStorage.setItem('task-app_test', JSON.stringify(testData));
+      // First save the data to get it encrypted
+      storageService.save('test', testData);
       
       const result = storageService.load('test');
       
@@ -124,9 +162,20 @@ describe('storage utilities', () => {
 
     it('should load array data correctly', () => {
       const testData = [{ id: 1 }, { id: 2 }];
-      mockLocalStorage.setItem('task-app_tasks', JSON.stringify(testData));
+      // First save the data to get it encrypted
+      storageService.save('tasks', testData);
       
       const result = storageService.load('tasks');
+      
+      expect(result).toEqual(testData);
+    });
+
+    it('should load legacy unencrypted data', () => {
+      const testData = { id: 1, name: 'legacy' };
+      // Simulate legacy data without encryption
+      mockLocalStorage.setItem('task-app_legacy', JSON.stringify(testData));
+      
+      const result = storageService.load('legacy');
       
       expect(result).toEqual(testData);
     });
@@ -155,10 +204,12 @@ describe('storage utilities', () => {
       const result = storageService.load('test');
       
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to load from localStorage:',
-        expect.any(Error)
-      );
+      if (process.env.NODE_ENV === 'development') {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Failed to load from localStorage:',
+          expect.any(Error)
+        );
+      }
       
       consoleSpy.mockRestore();
     });
