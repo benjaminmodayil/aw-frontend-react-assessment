@@ -6,7 +6,7 @@ import TaskForm from '../TaskForm';
 
 const mockProps = {
   onAddTask: jest.fn(),
-  isLoading: false
+  isAddingTask: false
 };
 
 describe('TaskForm', () => {
@@ -66,7 +66,7 @@ describe('TaskForm', () => {
   });
 
   it('disables form when loading', () => {
-    render(<TaskForm {...mockProps} isLoading={true} />);
+    render(<TaskForm {...mockProps} isAddingTask={true} />);
     
     const input = screen.getByPlaceholderText('Enter a new task...');
     const button = screen.getByRole('button');

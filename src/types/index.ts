@@ -4,11 +4,20 @@ export interface Task {
   completed: boolean;
   createdAt?: string;
   updatedAt?: string;
+  optimistic?: boolean;
+}
+
+export interface LoadingState {
+  addingTask: boolean;
+  togglingTasks: Set<number>;
+  deletingTasks: Set<number>;
+  refreshing: boolean;
+  loadingInitial: boolean;
 }
 
 export interface TaskContextType {
   tasks: Task[];
-  isLoading: boolean;
+  loadingState: LoadingState;
   error: string | null;
   addTask: (taskText: string) => Promise<void>;
   toggleTask: (taskId: number) => Promise<void>;
@@ -19,21 +28,22 @@ export interface TaskContextType {
 
 export interface TaskFormProps {
   onAddTask: (taskText: string) => Promise<void>;
-  isLoading: boolean;
+  isAddingTask: boolean;
 }
 
 export interface TaskItemProps {
   task: Task;
   onToggle: (taskId: number) => Promise<void>;
   onDelete: (taskId: number) => Promise<void>;
-  isLoading: boolean;
+  isToggling: boolean;
+  isDeleting: boolean;
 }
 
 export interface TaskListProps {
   tasks: Task[];
   onToggleTask: (taskId: number) => Promise<void>;
   onDeleteTask: (taskId: number) => Promise<void>;
-  isLoading: boolean;
+  loadingState: LoadingState;
 }
 
 export interface HeaderProps {
